@@ -265,6 +265,18 @@
             color: white;
         }
 
+        .btn-danger-solid {
+            background-color: var(--danger);
+            color: white;
+            padding: 10px;
+            font-size: 0.9rem;
+            margin-top: 16px;
+        }
+
+        .btn-danger-solid:hover {
+            background-color: #dc2626;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -425,6 +437,9 @@
             <div id="lista-historico-diario" class="history-list">
                 <!-- Preenchido via JS -->
             </div>
+
+            <!-- Botão de Exclusão do Mês -->
+            <button type="button" class="btn-danger-solid no-print" onclick="limparDadosMesSelecionado()">🗑️ Excluir Todos os Lançamentos do Mês</button>
         </div>
     </div>
 
@@ -652,6 +667,33 @@
         alert('Fechamento lançado/atualizado na nuvem com sucesso!');
     }
 
+    function limparDadosMesSelecionado() {
+        const selectMes = document.getElementById('select-mes');
+        if (!selectMes) return;
+        const mesKey = selectMes.value;
+
+        const [ano, mesNum] = mesKey.split('-');
+        const nomeMesFmt = new Date(ano, mesNum - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+        const confirmacao1 = confirm(`ATENÇÃO: Deseja realmente apagar TODOS os lançamentos do mês de ${nomeMesFmt}? Esta ação não poderá ser desfeita.`);
+        if (!confirmacao1) return;
+
+        const confirmacao2 = prompt(`Para confirmar a exclusão de ${nomeMesFmt}, digite a palavra APAGAR em letras maiúsculas:`);
+        if (confirmacao2 !== "APAGAR") {
+            alert('Ação cancelada. A palavra de confirmação não confere.');
+            return;
+        }
+
+        if (dadosApp.lancamentos[mesKey]) {
+            delete dadosApp.lancamentos[mesKey];
+            salvarNaNuvem();
+            renderizarTudo();
+            alert(`Todos os lançamentos de ${nomeMesFmt} foram excluídos com sucesso da nuvem.`);
+        } else {
+            alert('Não há lançamentos registrados neste mês para excluir.');
+        }
+    }
+
     function imprimirDia(dataStr) {
         const mesKey = dataStr.substring(0, 7);
         const lancamentosMes = dadosApp.lancamentos[mesKey] || [];
@@ -715,80 +757,3 @@
         });
 
         const listaHistorico = document.getElementById('lista-historico-diario');
-        listaHistorico.innerHTML = '';
-
-        if (lancamentosMes.length === 0) {
-            listaHistorico.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem;">Nenhum lançamento neste mês. O mês inicia zerado automaticamente.</span>`;
-        }
-
-        lancamentosMes.forEach(l => {
-            const brutoDia = l.valorBruto;
-            const retencaoDia = brutoDia * 0.03;
-            const liquidoDia = brutoDia - retencaoDia;
-
-            totalBrutoMes += brutoDia;
-            totalRetencaoMes += retencaoDia;
-            totalLiquidoMes += liquidoDia;
-
-            const qtdFuncs = l.funcionarios.length;
-            const valorPorCabecaDia = qtdFuncs > 0 ? (liquidoDia / qtdFuncs) : 0;
-
-            l.funcionarios.forEach(f => {
-                if (!acumuladoFuncionarios[f]) {
-                    acumuladoFuncionarios[f] = { valor: 0, dias: 0 };
-                }
-                acumuladoFuncionarios[f].valor += valorPorCabecaDia;
-                acumuladoFuncionarios[f].dias += 1;
-            });
-
-            const [ano, mes, dia] = l.data.split('-');
-            const dataFormatada = `${dia}/${mes}/${ano}`;
-            const responsavelRegistro = l.responsavel ? l.responsavel : 'Sistema';
-
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'history-item';
-            itemDiv.innerHTML = `
-                <strong>📅 Data: ${dataFormatada}</strong> <span style="float: right; font-size: 0.75rem;">👤 Resp: ${responsavelRegistro}</span><br>
-                <span>Valor Bruto do Dia: <strong>R$ ${brutoDia.toFixed(2)}</strong> | Retenção (3%): <strong style="color: var(--danger);">R$ ${retencaoDia.toFixed(2)}</strong></span><br>
-                <span>Líq. p/ rateio: R$ ${liquidoDia.toFixed(2)} | Cada funcionário recebeu: <strong>R$ ${valorPorCabecaDia.toFixed(2)}</strong> (${qtdFuncs} func.)</span><br>
-                <button type="button" class="btn-print-day no-print" onclick="imprimirDia('${l.data}')">🖨️ Imprimir Comprovante do Dia</button>
-            `;
-            listaHistorico.appendChild(itemDiv);
-        });
-
-        document.getElementById('lbl-bruto-mes').textContent = `R$ ${totalBrutoMes.toFixed(2)}`;
-        document.getElementById('lbl-retencao-mes').textContent = `R$ ${totalRetencaoMes.toFixed(2)}`;
-        document.getElementById('lbl-liquido-mes').textContent = `R$ ${totalLiquidoMes.toFixed(2)}`;
-
-        const tbody = document.getElementById('tabela-pagamento');
-        tbody.innerHTML = '';
-
-        const chavesFuncs = Object.keys(acumuladoFuncionarios);
-        if (chavesFuncs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum funcionário cadastrado.</td></tr>`;
-            return;
-        }
-
-        chavesFuncs.sort().forEach(f => {
-            const dados = acumuladoFuncionarios[f];
-            const mediaDiaria = dados.dias > 0 ? (dados.valor / dados.dias) : 0;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${f}</strong></td>
-                <td>${dados.dias}</td>
-                <td>R$ ${mediaDiaria.toFixed(2)}</td>
-                <td style="font-weight: 700; color: var(--success);">R$ ${dados.valor.toFixed(2)}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    function renderizarTudo() {
-        atualizarSeletorMeses();
-        renderizarFuncionarios();
-        renderizarResumoMes();
-    }
-</script>
-
-</body>
-</html>
