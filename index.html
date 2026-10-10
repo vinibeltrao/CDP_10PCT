@@ -430,6 +430,266 @@
 </div>
 
 <script>
+    const GERENTES_PERMITIDOS = {
+        "Marcus": "M@ndrade2026",
+        "Juliana": "Jm@la2025"
+    };
+
+    let db = null;
+    let dadosApp = {
+        funcionarios: [],
+        lancamentos: {}
+    };
+
+    let usuarioAtual = "";
+    document.getElementById('input-data').valueAsDate = new Date();
+
+    function executarLogin() {
+        const usuarioInput = document.getElementById('auth-usuario').value.trim();
+        const senhaInput = document.getElementById('auth-senha').value.trim();
+
+        if (!usuarioInput || !senhaInput) {
+            alert('Preencha o usuário e a senha.');
+            return;
+        }
+
+        if (GERENTES_PERMITIDOS[usuarioInput] && GERENTES_PERMITIDOS[usuarioInput] === senhaInput) {
+            usuarioAtual = usuarioInput;
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('lbl-usuario-logado').textContent = `Gerente: ${usuarioInput}`;
+            
+            inicializarFirebaseENuvem();
+        } else {
+            alert('Acesso negado. Usuário ou senha incorretos (verifique maiúsculas e minúsculas).');
+        }
+    }
+
+    function inicializarFirebaseENuvem() {
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyDBJn6IdfBdgJ6k-iQjf6LcHWsDzkLRoQU",
+                authDomain: "cdp-10pct.firebaseapp.com",
+                databaseURL: "https://cdp-10pct-default-rtdb.firebaseio.com",
+                projectId: "cdp-10pct",
+                storageBucket: "cdp-10pct.firebasestorage.app",
+                messagingSenderId: "924936420652",
+                appId: "1:924936420652:web:5717787af9766dc20a0089",
+                measurementId: "G-D1LFR1N67Y"
+            };
+
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.database();
+
+            db.ref('dados_loja').on('value', (snapshot) => {
+                const dadosRemotos = snapshot.val();
+                if (dadosRemotos) {
+                    dadosApp = dadosRemotos;
+                    if (!dadosApp.funcionarios) dadosApp.funcionarios = [];
+                    if (!dadosApp.lancamentos) dadosApp.lancamentos = {};
+                }
+                renderizarTudo();
+            }, (erro) => {
+                console.warn("Aviso de sincronização:", erro);
+                renderizarTudo();
+            });
+        } catch (e) {
+            console.error("Erro ao iniciar Firebase:", e);
+            renderizarTudo();
+        }
+    }
+
+    function salvarNaNuvem() {
+        if (!db) return;
+        db.ref('dados_loja').set(dadosApp).catch((erro) => {
+            alert('Erro ao salvar na nuvem: ' + erro.message);
+        });
+    }
+
+    function fazerLogout() {
+        location.reload();
+    }
+
+    function obterMesAtualKey() {
+        const dataInput = document.getElementById('input-data').value;
+        if (!dataInput) {
+            const hoje = new Date();
+            return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+        }
+        return dataInput.substring(0, 7);
+    }
+
+    function atualizarSeletorMeses() {
+        const select = document.getElementById('select-mes');
+        const mesesSet = new Set();
+        
+        mesesSet.add(obterMesAtualKey());
+        Object.keys(dadosApp.lancamentos).forEach(m => mesesSet.add(m));
+
+        const mesesOrdenados = Array.from(mesesSet).sort().reverse();
+        const mesAtualSelecionado = select.value || obterMesAtualKey();
+
+        select.innerHTML = '';
+        mesesOrdenados.forEach(mes => {
+            const opt = document.createElement('option');
+            opt.value = mes;
+            const [ano, mesNum] = mes.split('-');
+            const dataFmt = new Date(ano, mesNum - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            opt.textContent = dataFmt.charAt(0).toUpperCase() + dataFmt.slice(1);
+            select.appendChild(opt);
+        });
+
+        if (mesesOrdenados.includes(mesAtualSelecionado)) {
+            select.value = mesAtualSelecionado;
+        } else {
+            select.value = mesesOrdenados[0];
+        }
+    }
+
+    function mudarMes() {
+        renderizarTudo();
+    }
+
+    function adicionarFuncionario() {
+        const input = document.getElementById('novo-funcionario');
+        const nome = input.value.trim();
+        if (!nome) return;
+
+        if (dadosApp.funcionarios.includes(nome)) {
+            alert('Funcionário já cadastrado!');
+            return;
+        }
+
+        dadosApp.funcionarios.push(nome);
+        input.value = '';
+        salvarNaNuvem();
+        renderizarTudo();
+    }
+
+    function removerFuncionario(nome) {
+        if (confirm(`Deseja remover ${nome} da equipe cadastrada?`)) {
+            dadosApp.funcionarios = dadosApp.funcionarios.filter(f => f !== nome);
+            salvarNaNuvem();
+            renderizarTudo();
+        }
+    }
+
+    function renderizarFuncionarios() {
+        const containerTags = document.getElementById('lista-tags-funcionarios');
+        containerTags.innerHTML = '';
+        dadosApp.funcionarios.forEach(f => {
+            const tag = document.createElement('div');
+            tag.className = 'tag';
+            tag.innerHTML = `${f} <button type="button" onclick="removerFuncionario('${f}')">&times;</button>`;
+            containerTags.appendChild(tag);
+        });
+
+        const containerCheckboxes = document.getElementById('checkboxes-funcionarios');
+        containerCheckboxes.innerHTML = '';
+        if (dadosApp.funcionarios.length === 0) {
+            containerCheckboxes.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">Nenhum funcionário cadastrado.</span>';
+            return;
+        }
+        dadosApp.funcionarios.forEach(f => {
+            const label = document.createElement('label');
+            label.className = 'checkbox-label';
+            label.innerHTML = `<input type="checkbox" name="func-dia" value="${f}"> ${f}`;
+            containerCheckboxes.appendChild(label);
+        });
+    }
+
+    function lancarCaixa() {
+        const data = document.getElementById('input-data').value;
+        const valorBruto = parseFloat(document.getElementById('input-valor-10').value);
+
+        if (!data) {
+            alert('Informe a data do fechamento.');
+            return;
+        }
+        if (isNaN(valorBruto) || valorBruto <= 0) {
+            alert('Informe um valor válido para os 10%.');
+            return;
+        }
+
+        const checkboxes = document.querySelectorAll('input[name="func-dia"]:checked');
+        const funcionariosPresentes = Array.from(checkboxes).map(cb => cb.value);
+
+        if (funcionariosPresentes.length === 0) {
+            alert('Selecione pelo menos um funcionário que tr    <div class="employee-management">
+                <input type="text" id="novo-funcionario" placeholder="Nome do funcionário...">
+                <button type="button" onclick="adicionarFuncionario()" style="width: 120px;">Adicionar</button>
+            </div>
+            <div id="lista-tags-funcionarios" class="tag-list"></div>
+        </div>
+
+        <!-- Fechamento Diário -->
+        <div class="card no-print">
+            <h2>Lançamento Diário de Caixa</h2>
+            <div class="form-group">
+                <label for="input-data">Data do Fechamento</label>
+                <input type="date" id="input-data">
+            </div>
+            <div class="form-group">
+                <label for="input-valor-10">Valor Bruto dos 10% do Dia (R$)</label>
+                <input type="number" step="0.01" id="input-valor-10" placeholder="Ex: 150.00">
+            </div>
+            <div class="form-group">
+                <label>Quem trabalhou neste dia?</label>
+                <div id="checkboxes-funcionarios" class="checkbox-group"></div>
+            </div>
+            <button type="button" onclick="lancarCaixa()">Lançar Fechamento do Dia</button>
+        </div>
+
+        <!-- Resumo do Mês -->
+        <div class="card no-print">
+            <h2>Resumo do Mês Selecionado</h2>
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span>Total Bruto (10%) no Mês</span>
+                    <strong id="lbl-bruto-mes">R$ 0,00</strong>
+                </div>
+                <div class="summary-box">
+                    <span>Retenção Est. (3% acumulada)</span>
+                    <strong id="lbl-retencao-mes" style="color: var(--danger);">R$ 0,00</strong>
+                </div>
+            </div>
+            <div class="summary-box" style="margin-bottom: 16px;">
+                <span>Total Líquido a Distribuir no Mês</span>
+                <strong id="lbl-liquido-mes" style="color: var(--success);">R$ 0,00</strong>
+            </div>
+
+            <h3>Acumulado por Funcionário (Pagamento do Mês)</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Funcionário</th>
+                            <th>Dias</th>
+                            <th>Média Diária</th>
+                            <th>Total no Mês</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-pagamento"></tbody>
+                </table>
+            </div>
+
+            <h3 style="margin-top: 24px;">Lançamentos Diários</h3>
+            <div id="lista-historico-diario" class="history-list"></div>
+
+            <button type="button" class="btn-danger-solid no-print" onclick="limparDadosMesSelecionado()">🗑️ Excluir Todos os Lançamentos do Mês</button>
+        </div>
+    </div>
+
+    <!-- COMPONENTE PARA IMPRESSÃO DIÁRIA -->
+    <div id="card-impressao-diaria" class="hidden">
+        <h2>🍕 Casa da Pizza - Comprovante Diário</h2>
+        <div id="conteudo-impressao-diaria" class="print-details" style="margin-top: 15px;"></div>
+    </div>
+</div>
+
+<script>
     const firebaseConfig = {
         apiKey: "AIzaSyDBJn6IdfBdgJ6k-iQjf6LcHWsDzkLRoQU",
         authDomain: "cdp-10pct.firebaseapp.com",
