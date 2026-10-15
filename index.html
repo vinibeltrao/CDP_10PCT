@@ -19,6 +19,22 @@
             --border: #334155;
             --danger: #ef4444;
             --success: #10b981;
+            --input-bg: #0f172a;
+            --highlight-date: #3b82f6;
+        }
+
+        [data-theme="light"] {
+            --primary: #d97706;
+            --primary-dark: #b45309;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --danger: #dc2626;
+            --success: #059669;
+            --input-bg: #f1f5f9;
+            --highlight-date: #2563eb;
         }
 
         * {
@@ -26,6 +42,7 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.2s, color 0.2s;
         }
 
         body {
@@ -52,8 +69,14 @@
         }
 
         h1 {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             color: var(--primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
 
         .card {
@@ -87,11 +110,24 @@
         input, select {
             width: 100%;
             padding: 12px;
-            background-color: var(--bg);
+            background-color: var(--input-bg);
             border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text);
             font-size: 1rem;
+        }
+
+        input[type="date"].has-launch {
+            border-color: var(--highlight-date);
+            border-width: 2px;
+        }
+
+        .date-alert {
+            font-size: 0.75rem;
+            color: var(--highlight-date);
+            margin-top: 4px;
+            font-weight: 600;
+            display: none;
         }
 
         input:focus, select:focus {
@@ -128,7 +164,7 @@
             gap: 8px;
             max-height: 150px;
             overflow-y: auto;
-            background: var(--bg);
+            background: var(--input-bg);
             padding: 10px;
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -161,9 +197,12 @@
             transition: background 0.2s;
         }
 
+        [data-theme="light"] button {
+            color: #ffffff;
+        }
+
         button:hover {
             background-color: var(--primary-dark);
-            color: #fff;
         }
 
         .summary-grid {
@@ -174,7 +213,7 @@
         }
 
         .summary-box {
-            background: var(--bg);
+            background: var(--input-bg);
             padding: 12px;
             border-radius: 8px;
             border: 1px solid var(--border);
@@ -224,7 +263,7 @@
         }
 
         .tag {
-            background: var(--bg);
+            background: var(--input-bg);
             border: 1px solid var(--border);
             padding: 6px 12px;
             border-radius: 20px;
@@ -248,33 +287,78 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
             margin-top: 10px;
         }
 
         .history-item {
-            background: var(--bg);
+            background: var(--input-bg);
             padding: 12px;
             border-radius: 8px;
             border: 1px solid var(--border);
             font-size: 0.85rem;
         }
 
+        .history-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            width: auto;
+            border-radius: 6px;
+        }
+
         .btn-print-day {
             background-color: #3b82f6;
             color: white;
-            padding: 8px 12px;
+        }
+
+        .btn-edit-day {
+            background-color: var(--primary);
+            color: #0f172a;
+        }
+
+        .btn-delete-day {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-whatsapp {
+            background-color: #22c55e;
+            color: white;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-whatsapp:hover {
+            background-color: #16a34a;
+        }
+
+        .btn-theme-toggle {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 8px;
             font-size: 0.85rem;
+            cursor: pointer;
             width: auto;
-            margin-top: 8px;
         }
 
         .btn-danger-outline {
             background-color: transparent;
             border: 1px solid var(--danger);
             color: var(--danger);
-            padding: 8px 12px;
+            padding: 6px 12px;
             font-size: 0.85rem;
             width: auto;
         }
@@ -341,7 +425,7 @@
         }
     </style>
 </head>
-<body>
+<body data-theme="dark">
 
 <div class="container">
     
@@ -365,16 +449,19 @@
     <div id="app-screen" class="hidden">
         <header>
             <h1>🍕 Casa da Pizza 10%</h1>
-            <div>
-                <span id="lbl-usuario-logado" style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 4px;"></span>
-                <button type="button" class="btn-danger-outline no-print" onclick="fazerLogout()">Sair</button>
+            <div class="header-actions">
+                <button type="button" class="btn-theme-toggle no-print" onclick="alternarTema()">🌙 Tema</button>
+                <div>
+                    <span id="lbl-usuario-logado" style="font-size: 0.75rem; color: var(--text-muted); display: block;"></span>
+                    <button type="button" class="btn-danger-outline no-print" onclick="fazerLogout()" style="margin-top: 2px;">Sair</button>
+                </div>
             </div>
         </header>
 
         <!-- Seletor de Mês -->
         <div class="month-selector-wrapper no-print">
             <label for="select-mes">Mês de Referência:</label>
-            <select id="select-mes" onchange="mudarMes()" style="width: 200px;"></select>
+            <select id="select-mes" onchange="mudarMes()" style="width: 180px;"></select>
         </div>
 
         <!-- Cadastro de Funcionários Fixos -->
@@ -392,7 +479,8 @@
             <h2>Lançamento Diário de Caixa</h2>
             <div class="form-group">
                 <label for="input-data">Data do Fechamento</label>
-                <input type="date" id="input-data">
+                <input type="date" id="input-data" onchange="verificarDataSelecionada()">
+                <div id="date-alert-msg" class="date-alert">⚠️ Já existe um fechamento registrado para esta data (será atualizada ao salvar).</div>
             </div>
             <div class="form-group">
                 <label for="input-valor-10">Valor Bruto dos 10% do Dia (R$)</label>
@@ -401,7 +489,7 @@
             <div class="form-group">
                 <div class="checkbox-header">
                     <label style="margin-bottom:0;">Quem trabalhou neste dia?</label>
-                    <button type="button" class="btn-select-all" onclick="marcarTodosFuncionarios()">Marcar / Desmarcar Todos</button>
+                    <button type="button" class="btn-select-all" onclick="marcarTodosFuncionarios()">Marcar / Desmarcar</button>
                 </div>
                 <div id="checkboxes-funcionarios" class="checkbox-group"></div>
             </div>
@@ -426,6 +514,13 @@
                 <strong id="lbl-liquido-mes" style="color: var(--success);">R$ 0,00</strong>
             </div>
 
+            <div class="form-group" style="margin-top: 16px;">
+                <label for="filtro-funcionario">🔍 Filtrar Extrato por Funcionário:</label>
+                <select id="filtro-funcionario" onchange="renderizarResumoMes()">
+                    <option value="">(Todos os Funcionários)</option>
+                </select>
+            </div>
+
             <h3>Acumulado por Funcionário (Pagamento do Mês)</h3>
             <div style="overflow-x: auto;">
                 <table>
@@ -441,10 +536,10 @@
                 </table>
             </div>
 
-            <h3 style="margin-top: 24px;">Lançamentos Diários (Com Opção de Impressão)</h3>
+            <h3 style="margin-top: 24px;">Lançamentos Diários</h3>
             <div id="lista-historico-diario" class="history-list"></div>
 
-            <!-- Botão de Exclusão do Mês -->
+            <button type="button" class="btn-whatsapp" onclick="enviarRelatorioWhatsApp()">💬 Enviar Relatório Mensal por WhatsApp</button>
             <button type="button" class="btn-danger-solid no-print" onclick="limparDadosMesSelecionado()">🗑️ Excluir Todos os Lançamentos do Mês</button>
         </div>
     </div>
@@ -469,7 +564,20 @@
     };
 
     let usuarioAtual = "";
-    document.getElementById('input-data').valueAsDate = new Date();
+    const dataInputEl = document.getElementById('input-data');
+    dataInputEl.valueAsDate = new Date();
+
+    function alternarTema() {
+        const body = document.body;
+        const btnToggle = document.querySelector('.btn-theme-toggle');
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            btnToggle.textContent = '☀️ Tema';
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            btnToggle.textContent = '🌙 Tema';
+        }
+    }
 
     function executarLogin() {
         const usuarioInput = document.getElementById('auth-usuario').value.trim();
@@ -488,7 +596,7 @@
             
             inicializarFirebaseENuvem();
         } else {
-            alert('Acesso negado. Usuário ou senha incorretos (verifique as letras maiúsculas e minúsculas).');
+            alert('Acesso negado. Usuário ou senha incorretos.');
         }
     }
 
@@ -540,7 +648,7 @@
     }
 
     function obterMesAtualKey() {
-        const dataInput = document.getElementById('input-data').value;
+        const dataInput = dataInputEl.value;
         if (!dataInput) {
             const hoje = new Date();
             return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
@@ -578,6 +686,23 @@
 
     function mudarMes() {
         renderizarTudo();
+    }
+
+    function verificarDataSelecionada() {
+        const dataVal = dataInputEl.value;
+        const alertMsg = document.getElementById('date-alert-msg');
+        if (!dataVal) return;
+        const mesKey = dataVal.substring(0, 7);
+        const lancamentosMes = (dadosApp.lancamentos && dadosApp.lancamentos[mesKey]) || [];
+        const existe = lancamentosMes.some(l => l.data === dataVal);
+
+        if (existe) {
+            dataInputEl.classList.add('has-launch');
+            alertMsg.style.display = 'block';
+        } else {
+            dataInputEl.classList.remove('has-launch');
+            alertMsg.style.display = 'none';
+        }
     }
 
     function adicionarFuncionario() {
@@ -630,20 +755,32 @@
                 containerCheckboxes.appendChild(label);
             });
         }
+
+        const selectFiltro = document.getElementById('filtro-funcionario');
+        if (selectFiltro) {
+            const valorAtual = selectFiltro.value;
+            selectFiltro.innerHTML = '<option value="">(Todos os Funcionários)</option>';
+            dadosApp.funcionarios.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.textContent = f;
+                selectFiltro.appendChild(opt);
+            });
+            selectFiltro.value = valorAtual;
+        }
     }
 
     function marcarTodosFuncionarios() {
         const checkboxes = document.querySelectorAll('input[name="func-dia"]');
         if (checkboxes.length === 0) return;
-        
-        // Se houver algum desmarcado, marca todos. Se todos já estiverem marcados, desmarca todos.
         const algumDesmarcado = Array.from(checkboxes).some(cb => !cb.checked);
         checkboxes.forEach(cb => cb.checked = algumDesmarcado);
     }
 
     function lancarCaixa() {
-        const data = document.getElementById('input-data').value;
-        const valorBruto = parseFloat(document.getElementById('input-valor-10').value);
+        const data = dataInputEl.value;
+        const valorInputEl = document.getElementById('input-valor-10');
+        const valorBruto = parseFloat(valorInputEl.value);
 
         if (!data) {
             alert('Informe a data do fechamento.');
@@ -663,16 +800,16 @@
         }
 
         const mesKey = data.substring(0, 7);
-
-        if (!dadosApp.lancamentos) {
-            dadosApp.lancamentos = {};
-        }
-
-        if (!dadosApp.lancamentos[mesKey]) {
-            dadosApp.lancamentos[mesKey] = [];
-        }
+        if (!dadosApp.lancamentos) dadosApp.lancamentos = {};
+        if (!dadosApp.lancamentos[mesKey]) dadosApp.lancamentos[mesKey] = [];
 
         const indexExistente = dadosApp.lancamentos[mesKey].findIndex(l => l.data === data);
+
+        if (indexExistente >= 0) {
+            const [ano, mes, dia] = data.split('-');
+            const confirmar = confirm(`Atenção: Já existe um lançamento registrado para o dia ${dia}/${mes}/${ano}. Deseja sobrescrever os dados?`);
+            if (!confirmar) return;
+        }
         
         const novoRegistro = {
             data,
@@ -690,12 +827,54 @@
         dadosApp.lancamentos[mesKey].sort((a, b) => new Date(b.data) - new Date(a.data));
         document.getElementById('select-mes').value = mesKey;
 
-        document.getElementById('input-valor-10').value = '';
+        // Limpa o input de valor e desmarca os checkboxes com segurança
+        valorInputEl.value = '';
         document.querySelectorAll('input[name="func-dia"]').forEach(cb => cb.checked = false);
 
         salvarNaNuvem();
         renderizarTudo();
         alert('Fechamento lançado/atualizado na nuvem com sucesso!');
+    }
+
+    function editarDia(dataStr) {
+        const mesKey = dataStr.substring(0, 7);
+        const lancamentosMes = (dadosApp.lancamentos && dadosApp.lancamentos[mesKey]) || [];
+        const registro = lancamentosMes.find(l => l.data === dataStr);
+        if (!registro) return;
+
+        dataInputEl.value = registro.data;
+        document.getElementById('input-valor-10').value = registro.valorBruto;
+
+        document.querySelectorAll('input[name="func-dia"]').forEach(cb => {
+            cb.checked = registro.funcionarios.includes(cb.value);
+        });
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        verificarDataSelecionada();
+    }
+
+    function excluirDia(dataStr) {
+        const [ano, mes, dia] = dataStr.split('-');
+        const dataFmt = `${dia}/${mes}/${ano}`;
+
+        if (!confirm(`Deseja realmente excluir o lançamento do dia ${dataFmt}?`)) return;
+
+        const senhaDigitada = prompt(`Para confirmar a exclusão do dia ${dataFmt}, digite a senha do usuário ${usuarioAtual}:`);
+        if (!senhaDigitada || senhaDigitada.trim() !== GERENTES_PERMITIDOS[usuarioAtual]) {
+            alert('Ação cancelada. Senha incorreta.');
+            return;
+        }
+
+        const mesKey = dataStr.substring(0, 7);
+        if (dadosApp.lancamentos && dadosApp.lancamentos[mesKey]) {
+            dadosApp.lancamentos[mesKey] = dadosApp.lancamentos[mesKey].filter(l => l.data !== dataStr);
+            if (dadosApp.lancamentos[mesKey].length === 0) {
+                delete dadosApp.lancamentos[mesKey];
+            }
+            salvarNaNuvem();
+            renderizarTudo();
+            alert(`Lançamento de ${dataFmt} excluído com sucesso.`);
+        }
     }
 
     function limparDadosMesSelecionado() {
@@ -710,7 +889,6 @@
         if (!confirmacao1) return;
 
         const senhaDigitada = prompt(`Para confirmar a exclusão de ${nomeMesFmt}, digite a senha do usuário ${usuarioAtual}:`);
-        
         if (!senhaDigitada || senhaDigitada.trim() !== GERENTES_PERMITIDOS[usuarioAtual]) {
             alert('Ação cancelada. Senha incorreta.');
             return;
@@ -730,7 +908,6 @@
         const mesKey = dataStr.substring(0, 7);
         const lancamentosMes = (dadosApp.lancamentos && dadosApp.lancamentos[mesKey]) || [];
         const registro = lancamentosMes.find(l => l.data === dataStr);
-
         if (!registro) return;
 
         const bruto = registro.valorBruto;
@@ -764,9 +941,73 @@
         blocoImpressao.classList.add('hidden');
     }
 
+    function enviarRelatorioWhatsApp() {
+        const selectMes = document.getElementById('select-mes');
+        const mesKey = selectMes ? selectMes.value : obterMesAtualKey();
+        const lancamentosMes = (dadosApp.lancamentos && dadosApp.lancamentos[mesKey]) || [];
+
+        if (lancamentosMes.length === 0) {
+            alert('Não há lançamentos no mês selecionado para gerar o relatório.');
+            return;
+        }
+
+        const [ano, mesNum] = mesKey.split('-');
+        const nomeMesFmt = new Date(ano, mesNum - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+        let totalBrutoMes = 0;
+        let totalRetencaoMes = 0;
+        let totalLiquidoMes = 0;
+
+        const acumuladoFuncionarios = {};
+        (dadosApp.funcionarios || []).forEach(f => {
+            acumuladoFuncionarios[f] = { valor: 0, dias: 0 };
+        });
+
+        lancamentosMes.forEach(l => {
+            const brutoDia = l.valorBruto;
+            const retencaoDia = brutoDia * 0.03;
+            const liquidoDia = brutoDia - retencaoDia;
+            totalBrutoMes += brutoDia;
+            totalRetencaoMes += retencaoDia;
+            totalLiquidoMes += liquidoDia;
+
+            const qtdFuncs = l.funcionarios.length;
+            const valorPorCabecaDia = qtdFuncs > 0 ? (liquidoDia / qtdFuncs) : 0;
+
+            l.funcionarios.forEach(f => {
+                if (!acumuladoFuncionarios[f]) {
+                    acumuladoFuncionarios[f] = { valor: 0, dias: 0 };
+                }
+                acumuladoFuncionarios[f].valor += valorPorCabecaDia;
+                acumuladoFuncionarios[f].dias += 1;
+            });
+        });
+
+        let texto = `🍕 *FECHAMENTO 10% - CASA DA PIZZA* 🍕\n`;
+        texto += `📅 Mês: ${nomeMesFmt.charAt(0).toUpperCase() + nomeMesFmt.slice(1)}\n\n`;
+        texto += `💰 *Totais do Período:*\n`;
+        texto += `• Bruto: R$ ${totalBrutoMes.toFixed(2)}\n`;
+        texto += `• Retenção (3%): R$ ${totalRetencaoMes.toFixed(2)}\n`;
+        texto += `• Líquido Rateio: R$ ${totalLiquidoMes.toFixed(2)}\n\n`;
+        texto += `👥 *Acumulado por Funcionário:*\n`;
+
+        Object.keys(acumuladoFuncionarios).sort().forEach(f => {
+            const dados = acumuladoFuncionarios[f];
+            if (dados.dias > 0) {
+                texto += `▪️ *${f}*: ${dados.dias} dias | Total: *R$ ${dados.valor.toFixed(2)}*\n`;
+            }
+        });
+
+        texto += `\n_Relatório gerado pelo app de gestão._`;
+
+        const urlWp = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+        window.open(urlWp, '_blank');
+    }
+
     function renderizarResumoMes() {
         const selectMes = document.getElementById('select-mes');
         const mesKey = selectMes ? selectMes.value : obterMesAtualKey();
+        const filtroFunc = document.getElementById('filtro-funcionario').value;
         const lancamentosMes = (dadosApp.lancamentos && dadosApp.lancamentos[mesKey]) || [];
 
         let totalBrutoMes = 0;
@@ -782,8 +1023,13 @@
         if (listaHistorico) {
             listaHistorico.innerHTML = '';
 
-            if (lancamentosMes.length === 0) {
-                listaHistorico.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem;">Nenhum lançamento neste mês.</span>`;
+            const lancamentosFiltrados = lancamentosMes.filter(l => {
+                if (!filtroFunc) return true;
+                return l.funcionarios.includes(filtroFunc);
+            });
+
+            if (lancamentosFiltrados.length === 0) {
+                listaHistorico.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem;">Nenhum lançamento encontrado.</span>`;
             }
 
             lancamentosMes.forEach(l => {
@@ -805,6 +1051,14 @@
                     acumuladoFuncionarios[f].valor += valorPorCabecaDia;
                     acumuladoFuncionarios[f].dias += 1;
                 });
+            });
+
+            lancamentosFiltrados.forEach(l => {
+                const brutoDia = l.valorBruto;
+                const retencaoDia = brutoDia * 0.03;
+                const liquidoDia = brutoDia - retencaoDia;
+                const qtdFuncs = l.funcionarios.length;
+                const valorPorCabecaDia = qtdFuncs > 0 ? (liquidoDia / qtdFuncs) : 0;
 
                 const [ano, mes, dia] = l.data.split('-');
                 const itemDiv = document.createElement('div');
@@ -813,7 +1067,11 @@
                     <strong>📅 Data: ${dia}/${mes}/${ano}</strong> <span style="float: right;">👤 ${l.responsavel || 'Sistema'}</span><br>
                     <span>Bruto: R$ ${brutoDia.toFixed(2)} | Retenção (3%): R$ ${retencaoDia.toFixed(2)}</span><br>
                     <span>Por cabeça: <strong>R$ ${valorPorCabecaDia.toFixed(2)}</strong> (${qtdFuncs} func.)</span><br>
-                    <button type="button" class="btn-print-day" onclick="imprimirDia('${l.data}')">🖨️ Imprimir</button>
+                    <div class="history-actions">
+                        <button type="button" class="btn-action btn-print-day" onclick="imprimirDia('${l.data}')">🖨️ Impr.</button>
+                        <button type="button" class="btn-action btn-edit-day" onclick="editarDia('${l.data}')">✏️ Editar</button>
+                        <button type="button" class="btn-action btn-delete-day" onclick="excluirDia('${l.data}')">🗑️ Excluir</button>
+                    </div>
                 `;
                 listaHistorico.appendChild(itemDiv);
             });
@@ -838,6 +1096,7 @@
             }
 
             chavesFuncs.sort().forEach(f => {
+                if (filtroFunc && f !== filtroFunc) return;
                 const dados = acumuladoFuncionarios[f];
                 const mediaDiaria = dados.dias > 0 ? (dados.valor / dados.dias) : 0;
                 const tr = document.createElement('tr');
@@ -856,6 +1115,7 @@
         atualizarSeletorMeses();
         renderizarFuncionarios();
         renderizarResumoMes();
+        verificarDataSelecionada();
     }
 </script>
 
