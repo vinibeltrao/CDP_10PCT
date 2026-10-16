@@ -392,35 +392,43 @@
             font-weight: 600;
         }
 
+        /* REGRAS DE IMPRESSÃO SEGURAS PARA O CHROME / WINDOWS */
         @media print {
             body {
-                background-color: white;
-                color: black;
-                padding: 0;
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                display: block !important;
             }
-            .no-print, header, .month-selector-wrapper, #auth-screen, .container > div:not(#card-impressao-diaria) {
+            .container {
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .no-print, header, .month-selector-wrapper, #auth-screen, .container > .card {
                 display: none !important;
             }
             #card-impressao-diaria {
                 display: block !important;
-                background-color: white !important;
+                background-color: #ffffff !important;
                 border: none !important;
                 box-shadow: none !important;
-                padding: 10px !important;
+                padding: 0 !important;
                 margin: 0 !important;
                 width: 100% !important;
-                color: black !important;
+                color: #000000 !important;
             }
             #card-impressao-diaria h2 {
-                color: black !important;
-                border-bottom: 2px solid #333 !important;
+                color: #000000 !important;
+                border-bottom: 2px solid #000000 !important;
                 padding-bottom: 8px !important;
                 font-size: 1.3rem !important;
             }
             .print-details {
-                font-size: 1rem !important;
-                line-height: 1.6 !important;
-                color: black !important;
+                font-size: 1.1rem !important;
+                line-height: 1.8 !important;
+                color: #000000 !important;
             }
         }
     </style>
@@ -827,7 +835,6 @@
         dadosApp.lancamentos[mesKey].sort((a, b) => new Date(b.data) - new Date(a.data));
         document.getElementById('select-mes').value = mesKey;
 
-        // Limpa o input de valor e desmarca os checkboxes com segurança
         valorInputEl.value = '';
         document.querySelectorAll('input[name="func-dia"]').forEach(cb => cb.checked = false);
 
@@ -994,7 +1001,7 @@
         Object.keys(acumuladoFuncionarios).sort().forEach(f => {
             const dados = acumuladoFuncionarios[f];
             if (dados.dias > 0) {
-                texto += `▪️ *${f}*: ${dados.dias} dias | Total: *R$ ${dados.valor.toFixed(2)}*\n`;
+                texto += `▪️ *${f}* : ${dados.dias} dias | Total: *R$ ${dados.valor.toFixed(2)}*\n`;
             }
         });
 
