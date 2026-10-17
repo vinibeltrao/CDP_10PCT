@@ -391,6 +391,38 @@
             margin-bottom: 0;
             font-weight: 600;
         }
+
+        @media print {
+            body {
+                background-color: white;
+                color: black;
+                padding: 0;
+            }
+            .no-print, header, .month-selector-wrapper, #auth-screen, .container > div:not(#card-impressao-diaria) {
+                display: none !important;
+            }
+            #card-impressao-diaria {
+                display: block !important;
+                background-color: white !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 10px !important;
+                margin: 0 !important;
+                width: 100% !important;
+                color: black !important;
+            }
+            #card-impressao-diaria h2 {
+                color: black !important;
+                border-bottom: 2px solid #333 !important;
+                padding-bottom: 8px !important;
+                font-size: 1.3rem !important;
+            }
+            .print-details {
+                font-size: 1rem !important;
+                line-height: 1.6 !important;
+                color: black !important;
+            }
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -418,22 +450,22 @@
         <header>
             <h1>🍕 Casa da Pizza 10%</h1>
             <div class="header-actions">
-                <button type="button" class="btn-theme-toggle" onclick="alternarTema()">🌙 Tema</button>
+                <button type="button" class="btn-theme-toggle no-print" onclick="alternarTema()">🌙 Tema</button>
                 <div>
                     <span id="lbl-usuario-logado" style="font-size: 0.75rem; color: var(--text-muted); display: block;"></span>
-                    <button type="button" class="btn-danger-outline" onclick="fazerLogout()" style="margin-top: 2px;">Sair</button>
+                    <button type="button" class="btn-danger-outline no-print" onclick="fazerLogout()" style="margin-top: 2px;">Sair</button>
                 </div>
             </div>
         </header>
 
         <!-- Seletor de Mês -->
-        <div class="month-selector-wrapper">
+        <div class="month-selector-wrapper no-print">
             <label for="select-mes">Mês de Referência:</label>
             <select id="select-mes" onchange="mudarMes()" style="width: 180px;"></select>
         </div>
 
         <!-- Cadastro de Funcionários Fixos -->
-        <div class="card">
+        <div class="card no-print">
             <h2>Equipe Cadastrada</h2>
             <div class="employee-management">
                 <input type="text" id="novo-funcionario" placeholder="Nome do funcionário...">
@@ -443,7 +475,7 @@
         </div>
 
         <!-- Fechamento Diário -->
-        <div class="card">
+        <div class="card no-print">
             <h2>Lançamento Diário de Caixa</h2>
             <div class="form-group">
                 <label for="input-data">Data do Fechamento</label>
@@ -465,7 +497,7 @@
         </div>
 
         <!-- Resumo do Mês -->
-        <div class="card">
+        <div class="card no-print">
             <h2>Resumo do Mês Selecionado</h2>
             <div class="summary-grid">
                 <div class="summary-box">
@@ -508,8 +540,14 @@
             <div id="lista-historico-diario" class="history-list"></div>
 
             <button type="button" class="btn-whatsapp" onclick="enviarRelatorioWhatsApp()">💬 Enviar Relatório Mensal por WhatsApp</button>
-            <button type="button" class="btn-danger-solid" onclick="limparDadosMesSelecionado()">🗑️ Excluir Todos os Lançamentos do Mês</button>
+            <button type="button" class="btn-danger-solid no-print" onclick="limparDadosMesSelecionado()">🗑️ Excluir Todos os Lançamentos do Mês</button>
         </div>
+    </div>
+
+    <!-- COMPONENTE PARA IMPRESSÃO DIÁRIA -->
+    <div id="card-impressao-diaria" class="hidden">
+        <h2>🍕 Casa da Pizza - Comprovante Diário</h2>
+        <div id="conteudo-impressao-diaria" class="print-details" style="margin-top: 15px;"></div>
     </div>
 </div>
 
@@ -789,6 +827,7 @@
         dadosApp.lancamentos[mesKey].sort((a, b) => new Date(b.data) - new Date(a.data));
         document.getElementById('select-mes').value = mesKey;
 
+        // Limpa o input de valor e desmarca os checkboxes com segurança
         valorInputEl.value = '';
         document.querySelectorAll('input[name="func-dia"]').forEach(cb => cb.checked = false);
 
@@ -865,7 +904,6 @@
         }
     }
 
-    // IMPRESSÃO ISOLADA EM NOVA ABA (À PROVA DE CRASH NO CHROME)
     function imprimirDia(dataStr) {
         const mesKey = dataStr.substring(0, 7);
         const lancamentosMes = (dadosApp.lancamentos && dadosApp.lancamentos[mesKey]) || [];
@@ -886,39 +924,21 @@
             htmlFuncionarios += `<li>${f}: <strong>R$ ${valorCabeca.toFixed(2)}</strong></li>`;
         });
 
-        const janelaImpressao = window.open('', '_blank');
-        janelaImpressao.document.write(`
-            <!DOCTYPE html>
-            <html lang="pt-BR">
-            <head>
-                <meta charset="UTF-8">
-                <title>Comprovante - ${dataFmt}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 20px; color: #000; background: #fff; }
-                    h2 { border-bottom: 2px solid #000; padding-bottom: 8px; font-size: 1.2rem; }
-                    p, li { font-size: 1rem; line-height: 1.6; }
-                    ul { margin-top: 5px; }
-                </style>
-            </head>
-            <body>
-                <h2>🍕 Casa da Pizza - Comprovante Diário</h2>
-                <p><strong>Data:</strong> ${dataFmt}</p>
-                <p><strong>Gerente Responsável:</strong> ${registro.responsavel || 'Sistema'}</p>
-                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
-                <p><strong>Valor Bruto (10%):</strong> R$ ${bruto.toFixed(2)}</p>
-                <p><strong>Retenção Est. (3%):</strong> R$ ${retencao.toFixed(2)}</p>
-                <p><strong>Líquido para Rateio:</strong> R$ ${liquido.toFixed(2)}</p>
-                <p><strong>Equipe Presente (${qtd} funcionários):</strong></p>
-                <ul>${htmlFuncionarios}</ul>
-                <script>
-                    window.onload = function() {
-                        window.print();
-                    };
-                </script>
-            </body>
-            </html>
-        `);
-        janelaImpressao.document.close();
+        document.getElementById('conteudo-impressao-diaria').innerHTML = `
+            <p><strong>Data:</strong> ${dataFmt}</p>
+            <p><strong>Gerente:</strong> ${registro.responsavel}</p>
+            <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
+            <p>Bruto: R$ ${bruto.toFixed(2)}</p>
+            <p>Retenção (3%): R$ ${retencao.toFixed(2)}</p>
+            <p>Líquido Rateio: R$ ${liquido.toFixed(2)}</p>
+            <p>Equipe (${qtd}):</p>
+            <ul style="margin-left: 20px;">${htmlFuncionarios}</ul>
+        `;
+        
+        const blocoImpressao = document.getElementById('card-impressao-diaria');
+        blocoImpressao.classList.remove('hidden');
+        window.print();
+        blocoImpressao.classList.add('hidden');
     }
 
     function enviarRelatorioWhatsApp() {
@@ -1083,7 +1103,7 @@
                 tr.innerHTML = `
                     <td><strong>${f}</strong></td>
                     <td>${dados.dias}</td>
-                    <td>R$ ${mediaDiolar ? mediaDiaria.toFixed(2) : mediaDiaria.toFixed(2)}</td>
+                    <td>R$ ${mediaDiaria.toFixed(2)}</td>
                     <td style="font-weight: 700; color: var(--success);">R$ ${dados.valor.toFixed(2)}</td>
                 `;
                 tbody.appendChild(tr);
