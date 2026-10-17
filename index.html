@@ -314,11 +314,6 @@
             border-radius: 6px;
         }
 
-        .btn-print-day {
-            background-color: #3b82f6;
-            color: white;
-        }
-
         .btn-edit-day {
             background-color: var(--primary);
             color: #0f172a;
@@ -418,22 +413,22 @@
         <header>
             <h1>🍕 Casa da Pizza 10%</h1>
             <div class="header-actions">
-                <button type="button" class="btn-theme-toggle no-print" onclick="alternarTema()">🌙 Tema</button>
+                <button type="button" class="btn-theme-toggle" onclick="alternarTema()">🌙 Tema</button>
                 <div>
                     <span id="lbl-usuario-logado" style="font-size: 0.75rem; color: var(--text-muted); display: block;"></span>
-                    <button type="button" class="btn-danger-outline no-print" onclick="fazerLogout()" style="margin-top: 2px;">Sair</button>
+                    <button type="button" class="btn-danger-outline" onclick="fazerLogout()" style="margin-top: 2px;">Sair</button>
                 </div>
             </div>
         </header>
 
         <!-- Seletor de Mês -->
-        <div class="month-selector-wrapper no-print">
+        <div class="month-selector-wrapper">
             <label for="select-mes">Mês de Referência:</label>
             <select id="select-mes" onchange="mudarMes()" style="width: 180px;"></select>
         </div>
 
         <!-- Cadastro de Funcionários Fixos -->
-        <div class="card no-print">
+        <div class="card">
             <h2>Equipe Cadastrada</h2>
             <div class="employee-management">
                 <input type="text" id="novo-funcionario" placeholder="Nome do funcionário...">
@@ -443,7 +438,7 @@
         </div>
 
         <!-- Fechamento Diário -->
-        <div class="card no-print">
+        <div class="card">
             <h2>Lançamento Diário de Caixa</h2>
             <div class="form-group">
                 <label for="input-data">Data do Fechamento</label>
@@ -465,7 +460,7 @@
         </div>
 
         <!-- Resumo do Mês -->
-        <div class="card no-print">
+        <div class="card">
             <h2>Resumo do Mês Selecionado</h2>
             <div class="summary-grid">
                 <div class="summary-box">
@@ -508,7 +503,7 @@
             <div id="lista-historico-diario" class="history-list"></div>
 
             <button type="button" class="btn-whatsapp" onclick="enviarRelatorioWhatsApp()">💬 Enviar Relatório Mensal por WhatsApp</button>
-            <button type="button" class="btn-danger-solid no-print" onclick="limparDadosMesSelecionado()">🗑️ Excluir Todos os Lançamentos do Mês</button>
+            <button type="button" class="btn-danger-solid" onclick="limparDadosMesSelecionado()">🗑️ Excluir Todos os Lançamentos do Mês</button>
         </div>
     </div>
 </div>
@@ -865,85 +860,6 @@
         }
     }
 
-    // IMPRESSÃO ROBUSTA VIA IFRAME ISOLADO (ZERO CRASH NO CHROME/WINDOWS)
-    function imprimirDia(dataStr) {
-        const mesKey = dataStr.substring(0, 7);
-        const lancamentosMes = (dadosApp.lancamentos && dadosApp.lancamentos[mesKey]) || [];
-        const registro = lancamentosMes.find(l => l.data === dataStr);
-        if (!registro) return;
-
-        const bruto = registro.valorBruto;
-        const retencao = bruto * 0.03;
-        const liquido = bruto - retencao;
-        const qtd = registro.funcionarios.length;
-        const valorCabeca = qtd > 0 ? (liquido / qtd) : 0;
-
-        const [ano, mes, dia] = registro.data.split('-');
-        const dataFmt = `${dia}/${mes}/${ano}`;
-
-        let htmlFuncionarios = '';
-        registro.funcionarios.forEach(f => {
-            htmlFuncionarios += `<li>${f}: <strong>R$ ${valorCabeca.toFixed(2)}</strong></li>`;
-        });
-
-        let iframePrint = document.getElementById('iframe-print-helper');
-        if (!iframePrint) {
-            iframePrint = document.createElement('iframe');
-            iframePrint.id = 'iframe-print-helper';
-            iframePrint.style.display = 'none';
-            document.body.appendChild(iframePrint);
-        }
-
-        const doc = iframePrint.contentWindow.document;
-        doc.open();
-        doc.write(`
-            <!DOCTYPE html>
-            <html lang="pt-BR">
-            <head>
-                <meta charset="UTF-8">
-                <title>Comprovante - ${dataFmt}</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        padding: 20px;
-                        color: #000000;
-                        background: #ffffff;
-                    }
-                    h2 {
-                        border-bottom: 2px solid #000000;
-                        padding-bottom: 8px;
-                        font-size: 1.3rem;
-                    }
-                    p, li {
-                        font-size: 1rem;
-                        line-height: 1.6;
-                    }
-                    ul {
-                        margin-top: 5px;
-                    }
-                </style>
-            </head>
-            <body>
-                <h2>🍕 Casa da Pizza - Comprovante Diário</h2>
-                <p><strong>Data:</strong> ${dataFmt}</p>
-                <p><strong>Gerente Responsável:</strong> ${registro.responsavel || 'Sistema'}</p>
-                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
-                <p><strong>Valor Bruto (10%):</strong> R$ ${bruto.toFixed(2)}</p>
-                <p><strong>Retenção Est. (3%):</strong> R$ ${retencao.toFixed(2)}</p>
-                <p><strong>Líquido para Rateio:</strong> R$ ${liquido.toFixed(2)}</p>
-                <p><strong>Equipe Presente (${qtd} funcionários):</strong></p>
-                <ul>${htmlFuncionarios}</ul>
-            </body>
-            </html>
-        `);
-        doc.close();
-
-        setTimeout(() => {
-            iframePrint.contentWindow.focus();
-            iframePrint.contentWindow.print();
-        }, 250);
-    }
-
     function enviarRelatorioWhatsApp() {
         const selectMes = document.getElementById('select-mes');
         const mesKey = selectMes ? selectMes.value : obterMesAtualKey();
@@ -1071,7 +987,6 @@
                     <span>Bruto: R$ ${brutoDia.toFixed(2)} | Retenção (3%): R$ ${retencaoDia.toFixed(2)}</span><br>
                     <span>Por cabeça: <strong>R$ ${valorPorCabecaDia.toFixed(2)}</strong> (${qtdFuncs} func.)</span><br>
                     <div class="history-actions">
-                        <button type="button" class="btn-action btn-print-day" onclick="imprimirDia('${l.data}')">🖨️ Impr.</button>
                         <button type="button" class="btn-action btn-edit-day" onclick="editarDia('${l.data}')">✏️ Editar</button>
                         <button type="button" class="btn-action btn-delete-day" onclick="excluirDia('${l.data}')">🗑️ Excluir</button>
                     </div>
