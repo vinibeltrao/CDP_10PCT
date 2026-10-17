@@ -314,6 +314,11 @@
             border-radius: 6px;
         }
 
+        .btn-details-day {
+            background-color: #3b82f6;
+            color: white;
+        }
+
         .btn-edit-day {
             background-color: var(--primary);
             color: #0f172a;
@@ -385,6 +390,49 @@
         .month-selector-wrapper label {
             margin-bottom: 0;
             font-weight: 600;
+        }
+
+        /* MODAL DE DETALHES */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 450px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .modal-details-body {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 16px 0;
+            max-height: 250px;
+            overflow-y: auto;
+            color: var(--text);
+        }
+
+        .modal-details-body ul {
+            margin-left: 20px;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -504,6 +552,15 @@
 
             <button type="button" class="btn-whatsapp" onclick="enviarRelatorioWhatsApp()">💬 Enviar Relatório Mensal por WhatsApp</button>
             <button type="button" class="btn-danger-solid" onclick="limparDadosMesSelecionado()">🗑️ Excluir Todos os Lançamentos do Mês</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE DETALHES DO DIA -->
+    <div id="modal-detalhes" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2>👁️ Detalhes do Fechamento</h2>
+            <div id="conteudo-modal-detalhes" class="modal-details-body"></div>
+            <button type="button" onclick="fecharModalDetalhes()" style="background-color: var(--border); color: var(--text);">Fechar</button>
         </div>
     </div>
 </div>
@@ -860,6 +917,45 @@
         }
     }
 
+    // ABRIR PAINEL DE DETALHES DO DIA
+    function verDetalhesDia(dataStr) {
+        const mesKey = dataStr.substring(0, 7);
+        const lancamentosMes = (dadosApp.lancamentos && dadosApp.lancamentos[mesKey]) || [];
+        const registro = lancamentosMes.find(l => l.data === dataStr);
+        if (!registro) return;
+
+        const bruto = registro.valorBruto;
+        const retencao = bruto * 0.03;
+        const liquido = bruto - retencao;
+        const qtd = registro.funcionarios.length;
+        const valorCabeca = qtd > 0 ? (liquido / qtd) : 0;
+
+        const [ano, mes, dia] = registro.data.split('-');
+        const dataFmt = `${dia}/${mes}/${ano}`;
+
+        let htmlFuncionarios = '';
+        registro.funcionarios.forEach(f => {
+            htmlFuncionarios += `<li>${f}: <strong>R$ ${valorCabeca.toFixed(2)}</strong></li>`;
+        });
+
+        document.getElementById('conteudo-modal-detalhes').innerHTML = `
+            <p><strong>📅 Data:</strong> ${dataFmt}</p>
+            <p><strong>👤 Gerente:</strong> ${registro.responsavel || 'Sistema'}</p>
+            <hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--border);">
+            <p>💰 Bruto: <strong>R$ ${bruto.toFixed(2)}</strong></p>
+            <p>🏛️ Retenção (3%): <strong>R$ ${retencao.toFixed(2)}</strong></p>
+            <p>💵 Líquido Rateio: <strong style="color: var(--success);">R$ ${liquido.toFixed(2)}</strong></p>
+            <p style="margin-top: 10px;">👥 <strong>Equipe Presente (${qtd}):</strong></p>
+            <ul>${htmlFuncionarios}</ul>
+        `;
+
+        document.getElementById('modal-detalhes').classList.remove('hidden');
+    }
+
+    function fecharModalDetalhes() {
+        document.getElementById('modal-detalhes').classList.add('hidden');
+    }
+
     function enviarRelatorioWhatsApp() {
         const selectMes = document.getElementById('select-mes');
         const mesKey = selectMes ? selectMes.value : obterMesAtualKey();
@@ -987,6 +1083,7 @@
                     <span>Bruto: R$ ${brutoDia.toFixed(2)} | Retenção (3%): R$ ${retencaoDia.toFixed(2)}</span><br>
                     <span>Por cabeça: <strong>R$ ${valorPorCabecaDia.toFixed(2)}</strong> (${qtdFuncs} func.)</span><br>
                     <div class="history-actions">
+                        <button type="button" class="btn-action btn-details-day" onclick="verDetalhesDia('${l.data}')">👁️ Detalhes</button>
                         <button type="button" class="btn-action btn-edit-day" onclick="editarDia('${l.data}')">✏️ Editar</button>
                         <button type="button" class="btn-action btn-delete-day" onclick="excluirDia('${l.data}')">🗑️ Excluir</button>
                     </div>
